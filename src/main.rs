@@ -7,6 +7,7 @@ mod display;
 mod error;
 mod evidence;
 mod fetch;
+mod scheme;
 mod store;
 mod submit;
 mod utils;

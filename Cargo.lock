@@ -376,7 +376,7 @@ dependencies = [
  "clap-verbosity-flag",
  "coserv-rs",
  "cover",
- "ear 0.5.0 (git+https://github.com/veraison/rust-ear?rev=4240df1)",
+ "ear 0.4.0 (git+https://github.com/veraison/rust-ear?rev=15184e9a)",
  "env_logger",
  "hex",
  "log",
@@ -384,6 +384,7 @@ dependencies = [
  "regl",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.20",
  "tokio",
  "url",
@@ -423,7 +424,7 @@ dependencies = [
  "ciborium",
  "clap",
  "cose-rust",
- "ear 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ear 0.5.0",
  "hex",
  "hex-literal",
  "jsonwebtoken 10.4.0",
@@ -1089,24 +1090,6 @@ dependencies = [
  "cose-rust",
  "hex",
  "jsonwebtoken 10.4.0",
- "lazy_static",
- "openssl",
- "phf 0.13.1",
- "serde",
- "serde_json",
- "thiserror 2.0.20",
-]
-
-[[package]]
-name = "ear"
-version = "0.5.0"
-source = "git+https://github.com/veraison/rust-ear?rev=4240df1#4240df1848423b755b1cc1524b6073a8b26860ef"
-dependencies = [
- "base64 0.22.1",
- "ciborium",
- "cose-rust",
- "hex",
- "jsonwebtoken 11.0.0",
  "lazy_static",
  "openssl",
  "phf 0.13.1",
@@ -2142,24 +2125,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "jsonwebtoken"
-version = "11.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "881733cbc631fc9e472e24447ce32a64bedf2da498d6d8570b08edc87de71f65"
-dependencies = [
- "aws-lc-rs",
- "base64 0.22.1",
- "getrandom 0.2.17",
- "js-sys",
- "pem",
- "serde",
- "serde_json",
- "signature",
- "simple_asn1",
- "zeroize",
-]
-
-[[package]]
 name = "konst"
 version = "0.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3135,14 +3100,16 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 [[package]]
 name = "regl"
 version = "0.1.0"
-source = "git+https://github.com/veraison/rust-regl.git?rev=fe77b67#fe77b677b2bccf5813af136644cc52af6b2e2319"
+source = "git+https://github.com/veraison/rust-regl.git?rev=ce3293#ce329378412cd23021c316726d3190d6bea20547"
 dependencies = [
  "base64 0.22.1",
  "ccatoken 0.1.0 (git+https://github.com/veraison/rust-ccatoken.git)",
  "ciborium",
  "cmw",
+ "const_format",
  "coset 0.4.2",
  "ecdsa",
+ "mime",
  "p384",
  "rand_core 0.6.4",
  "reqwest 0.12.28",

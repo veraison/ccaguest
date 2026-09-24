@@ -18,7 +18,7 @@ thiserror = "2.0.20"
 url = { version = "2.5.8", features = ["serde"] }
 base64 = "0.23.1"
 serde_json = "1.0.151"
-regl = { git = "https://github.com/veraison/rust-regl.git", rev = "fe77b67"}
+regl = { git = "https://github.com/veraison/rust-regl.git", rev = "ce3293"}
 rand = "0.10.2"
 hex = "0.4.3"
 tokio = "1.53.1"
@@ -26,7 +26,8 @@ coserv-rs = { git = "https://github.com/veraison/coserv-rs.git", features = ["op
 veraison-apiclient = { git = "https://github.com/veraison/rust-apiclient.git", features = [ "disk-caching" ], rev = "3f43ee8" }
 cover = { git = "https://github.com/veraison/cover.git", rev = "030bc2d" }
 serde = "1.0.229"
-ear = { git = "https://github.com/veraison/rust-ear", rev = "4240df1" }
+ear = { git = "https://github.com/veraison/rust-ear", rev = "15184e9a" }
 
 [dev-dependencies]
 wiremock = "0.6.5"
+tempfile = "3.27.0"

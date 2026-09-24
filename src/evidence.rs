@@ -18,7 +18,6 @@ use std::{
     path::PathBuf,
     vec,
 };
-use url::Url;
 
 /// Regl attester backend(https://github.com/veraison/rust-regl) to use for evidence generation..
 ///
@@ -57,13 +56,11 @@ pub fn build_attester(
 ) -> Result<Box<dyn Attester<AttesterError = CcaError>>> {
     match kind {
         AttesterKind::Ratsd => {
-            let url: Url = if let Some(r) = ratsd_url {
-                Url::parse(r)?
-            } else {
+            let url = ratsd_url.unwrap_or_else(|| {
                 warn!("using ratsd-url: http://localhost:8895");
-                Url::parse("http://localhost:8895")?
-            };
-            Ok(Box::new(CcaRatsdAttester::with_url(url)))
+                "http://localhost:8895"
+            });
+            Ok(Box::new(CcaRatsdAttester::with_url(url)?))
         }
         AttesterKind::Tsm => Ok(Box::new(CcaTsmAttester::default())),
         AttesterKind::Sim => create_sim_attester(sim_claims, sim_iak),

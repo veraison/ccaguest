@@ -34,10 +34,10 @@ Once the attestaion evidence has been verified, the received attestation results
 >While using the `tsm` backend for attester, `sudo` permissions are required for `ccaguest`. `tsm` backend uses linux kernel's `configfs-tsm-report` ABI to fetch the evidence. Hence the process must have sufficient privilege to write to `configfs`, which can be usually done by escalating the privilege using `sudo`. It can also be used within a non-realm VM and the attestation evidence can be retrieved from a Realm VM using `regl`'s `ratsd` backend without `sudo` permissions.
 
 >[!NOTE]
-> The CoSERV service used during local verification must support `collected` result type.
+> The CoSERV service used during local verification must support querying `collected` artifacts.
 
 >[!NOTE]
-> The base url must have empty path segment, e.g. "http://address:port", ""https://veraison.example or "https://veraison.example/" but not "https://veraison.example/foo".
+> The base url must have empty path segment, e.g. "http://address:port", "https://veraison.example" or "https://veraison.example/" but not "https://veraison.example/foo".
 
 ## How to Build
  

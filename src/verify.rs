@@ -34,9 +34,11 @@ mod local {
     use super::*;
     use crate::coserv::{ResultType, get_reference_values, get_trust_anchor};
     use crate::evidence::{AttesterKind, generate_evidence, get_nonce};
+    use crate::scheme::CcaCustomScheme;
     use crate::store::MemCoservStore;
     use crate::utils;
-    use cover::{CcaScheme, Scheme, Verifier};
+    use cover::{CcaScheme, Policy, Scheme, Verifier};
+    use ear::RawValue;
     use std::collections::HashMap;
 
     #[derive(Debug, Parser)]
@@ -114,6 +116,10 @@ mod local {
         #[arg(long, default_value_t = false)]
         must_sign: bool,
 
+        /// Path to custom policy file for verification.
+        #[arg(short = 'P', long = "policy", value_parser = utils::validate_input_file_path)]
+        policy_path: Option<PathBuf>,
+
         /// Output file path for writing the attestation results. If not specified,
         /// the attestation results will be saved to default `ear.json` in the current working directory.
         #[arg(short, long, value_parser = utils::validate_output_path, default_value = "ear.json")]
@@ -130,7 +136,8 @@ mod local {
     /// the CoVer library. Evidence can be provided as a CBOR file. If evidence is not
     /// provided, it will try to generate one at runtime. A nonce can be provided as well.
     /// Reference values and trust anchors can be provided either as CoSERV result files
-    /// or can be fetched from a remote CoSERV service.
+    /// or can be fetched from a remote CoSERV service. A custom policy can also be provided
+    /// for verification.
     pub fn verify(args: Args) -> Result<()> {
         debug!("Verify local");
 
@@ -150,6 +157,7 @@ mod local {
             ca_cert,
             local_cache,
             must_sign,
+            policy_path,
             output,
             ..
         } = args;
@@ -170,6 +178,7 @@ mod local {
             ca_cert={ca_cert:?}, \n
             local_cache={local_cache:?}, \n
             must_sign={must_sign}, \n
+            policy_path={policy_path:?}, \n
             output={output:?}"
         );
 
@@ -249,13 +258,19 @@ mod local {
             coserv_store.add_coserv(&result_ta)?;
         }
 
-        // load supported attestation schemes
+        // load cca scheme with custom policy, if provided
+        let scheme: Box<dyn Scheme> = if let Some(path) = policy_path {
+            Box::new(CcaCustomScheme::new(&path)?)
+        } else {
+            Box::new(CcaScheme::new())
+        };
+
         let mut schemes = HashMap::new();
-        let cca_scheme: Box<dyn Scheme> = Box::new(CcaScheme::new());
-        schemes.insert("cca".to_string(), cca_scheme);
+        let scheme_name = scheme.name();
+        schemes.insert(scheme_name.clone(), scheme);
 
         debug!(
-            "supported schemes: {}",
+            "using schemes: {}",
             schemes
                 .keys()
                 .map(|k| k.as_ref())
@@ -273,7 +288,15 @@ mod local {
 
         // appraise evidence and produce the attestation result
         let nonce = evidence.realm.challenge;
-        let result = verifier.verify("cca", raw_evidence.as_slice(), Some(&nonce))?;
+        let mut result = verifier.verify(&scheme_name, raw_evidence.as_slice(), Some(&nonce))?;
+
+        // Add policy rules to policy claims of the submods
+        for (policy_id, appraisal) in result.ear.submods.iter_mut() {
+            let pol_rules = get_policy(policy_id, &result.policies)?;
+            appraisal
+                .policy_claims
+                .insert("policy-rules".to_string(), RawValue::String(pol_rules));
+        }
 
         debug!("Pretty print: {}", args.common.pretty);
         let ear_json = if args.common.pretty {
@@ -289,12 +312,29 @@ mod local {
         Ok(())
     }
 
+    // Get policy rules of a given policy ID
+    fn get_policy(policy_id: &String, policies: &Vec<Policy>) -> Result<String> {
+        for policy in policies {
+            if policy.id == *policy_id {
+                return Ok(policy.text.clone());
+            }
+        }
+        Err(Error::Custom(
+            "The ID from EAR will always be contained in list of policies returned by CoVER!"
+                .into(),
+        ))
+    }
+
     #[cfg(test)]
     mod tests {
-        use super::*;
 
-        #[test]
-        fn test_verify_local() {
+        use super::*;
+        use serde_json::Value;
+
+        fn get_ear(policy_path: Option<PathBuf>) -> Result<Value> {
+            let temp_file = tempfile::NamedTempFile::new()?;
+            let ear_path = temp_file.path().to_path_buf();
+
             let args = local::Args {
                 evidence: Some("test/cbor/ccatoken.cbor".into()),
                 attester: AttesterKind::Ratsd,
@@ -311,7 +351,8 @@ mod local {
                 ca_cert: None,
                 local_cache: None,
                 must_sign: false,
-                output: "ear.json".into(),
+                policy_path,
+                output: ear_path.clone(),
                 common: CommonFlags {
                     pretty: true,
                     force: true,
@@ -319,6 +360,38 @@ mod local {
             };
             let result = local::verify(args);
             assert!(result.is_ok());
+
+            let contents = fs::read_to_string(&ear_path)?;
+            let ear: Value = serde_json::from_str(&contents)?;
+            Ok(ear)
+        }
+
+        #[test]
+        fn test_verify_local_no_policy() {
+            let ear = get_ear(None).unwrap();
+            assert!(&ear["submods"]["platform"]["ear.status"] == "affirming");
+            assert!(&ear["submods"]["realm"]["ear.status"] == "warning");
+        }
+
+        #[test]
+        fn test_verify_local_empty_policy() {
+            let policy_path = PathBuf::from("test/policy/empty.rego");
+            let ear = get_ear(Some(policy_path)).unwrap();
+            assert!(&ear["submods"]["empty-custom"]["ear.status"] == "none");
+        }
+
+        #[test]
+        fn test_verify_local_allow_all_policy() {
+            let policy_path = PathBuf::from("test/policy/allow-all.rego");
+            let ear = get_ear(Some(policy_path)).unwrap();
+            assert!(&ear["submods"]["allow-all-custom"]["ear.status"] == "affirming");
+        }
+
+        #[test]
+        fn test_verify_local_deny_all_policy() {
+            let policy_path = PathBuf::from("test/policy/deny-all.rego");
+            let ear = get_ear(Some(policy_path)).unwrap();
+            assert!(&ear["submods"]["deny-all-custom"]["ear.status"] == "contraindicated");
         }
     }
 }

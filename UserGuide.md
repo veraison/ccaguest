@@ -305,8 +305,10 @@ An evidence file in CBOR format can be provided, or it can be generated at runti
 
 Endorsements can be provided using CoSERV results files in CBOR format, or they can be fetched at runtime using a remote CoSERV service. If the second option is used, the user must specify the CoSERV server base URL. Optional parameters can be provided to configure TLS certs, local caching, and signing requirements.
 
+An optional rego policy file can also be provided for additional verification and the evaluated Trust Vectors are provided under "custom" submod of the resulting EAR.
+
 >[!NOTE] \
-> The CoSERV service used during local verification must support `collected` result type.
+> The CoSERV service used during local verification must support querying `collected` artifacts.
 
 The attestation result is written to the specified output file. If no output path is provided, the attestation result is saved as ear.json in the current working directory.
 
@@ -396,6 +398,8 @@ Options:
           The path to the directory where local coserv results will be cached. If not specified, no local caching is performed, and all CoSERV requests will go to the server
       --must-sign
           The server MUST sign CoSERV results. The command fails if the server does not support signing
+  -P, --policy <POLICY_PATH>
+          Path to custom policy file for verification.
   -o, --output <OUTPUT>
           Output file path for writing the attestation results. If not specified, the attestation results will be saved to default `ear.json` in the current working directory [default: ear.json]
   -p, --pretty
@@ -510,5 +514,5 @@ Yet to be implemented.
 >While using the `tsm` backend for attester, `sudo` permissions are required for `ccaguest`. `tsm` backend uses linux kernel's `configfs-tsm-report` ABI to fetch the evidence. Hence the process must have sufficient privilege to write to `configfs`, which can be usually done by escalating the privilege using `sudo`. It can also be used within a non-realm VM and the attestation evidence can be retrieved from a Realm VM using `regl`'s `ratsd` backend without `sudo` permissions.
 
 >[!NOTE]
-> The base url must have empty path segment, e.g. "http://address:port", ""https://veraison.example or "https://veraison.example/" but not "https://veraison.example/foo".
+> The base url must have empty path segment, e.g. "http://address:port", "https://veraison.example" or "https://veraison.example/" but not "https://veraison.example/foo".
 
